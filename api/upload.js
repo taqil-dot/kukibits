@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
     try {
         // URL N8N Webhook Anda
-        const WEBHOOK_URL = 'https://n8n.kodekalabs.com/webhook/7926e7c6-89e5-4e05-83b9-4590b0035405';
+        const WEBHOOK_URL = 'https://n8n.kodekalabs.com/webhook/d1b5552a-714a-4908-b9c2-0015e14a3b4c';
 
         // Meneruskan request body (stream) langsung ke N8N
         // Kita ambil semua headers dari request asli (content-type, boundary, dll)
@@ -56,4 +56,5 @@ export default async function handler(req, res) {
 
 function tryParseJSON(str) {
     try { return JSON.parse(str); } catch (e) { return str; }
+
 }
