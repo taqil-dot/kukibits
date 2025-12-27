@@ -13,11 +13,12 @@
         
         <div class="text-center mb-8">
             <h1 class="text-2xl font-bold text-slate-800">Upload Data Excel</h1>
-            <p class="text-sm text-slate-500 mt-2">Entry Data Kodeka Labs x Kukibits</p>
+            <p class="text-sm text-slate-500 mt-2">Entry Data Kodeka Labs</p>
         </div>
 
         <form id="uploadForm" class="space-y-6">
             
+            <!-- Area Upload File -->
             <div class="relative group">
                 <label for="fileInput" class="flex flex-col items-center justify-center w-full h-48 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-blue-50 hover:border-blue-400 transition duration-300">
                     <div class="flex flex-col items-center justify-center pt-5 pb-6">
@@ -35,6 +36,22 @@
                 </div>
             </div>
 
+            <!-- Menu Pilihan Tujuan Pengiriman (BARU) -->
+            <div class="relative">
+                <label for="destinationSelect" class="block mb-2 text-sm font-medium text-slate-700">Tujuan Pengiriman</label>
+                <div class="relative">
+                    <select id="destinationSelect" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 appearance-none cursor-pointer">
+                        <option value="item" selected>🚀 Kirim Berdasarkan Item</option>
+                        <option value="order">📦 Kirim Berdasarkan Pesanan</option>
+                    </select>
+                    <!-- Icon panah custom agar lebih rapi -->
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
+                </div>
+                <p class="mt-1 text-xs text-slate-400" id="destinationHint">Data akan dikirim ke API Item</p>
+            </div>
+
             <button type="submit" id="submitBtn" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm px-5 py-3.5 text-center transition duration-300 shadow-md flex justify-center items-center gap-2">
                 <span>Kirim Data</span>
             </button>
@@ -47,9 +64,11 @@
     </div>
 
     <script>
-        // --- KONFIGURASI PENTING ---
-        // Arahkan ke file PHP proxy Anda, BUKAN langsung ke N8N
-        const API_URL = '/api/upload';
+        // --- KONFIGURASI URL API ---
+        const API_ENDPOINTS = {
+            item: '/api/item',   // URL untuk Item
+            order: '/api/order'  // URL untuk Pesanan (Silakan sesuaikan jika berbeda)
+        };
         // ---------------------------
 
         const fileInput = document.getElementById('fileInput');
@@ -57,6 +76,18 @@
         const fileNameText = document.getElementById('fileNameText');
         const uploadForm = document.getElementById('uploadForm');
         const submitBtn = document.getElementById('submitBtn');
+        const destinationSelect = document.getElementById('destinationSelect');
+        const destinationHint = document.getElementById('destinationHint');
+
+        // Fungsi: Update hint text saat dropdown berubah
+        destinationSelect.addEventListener('change', (e) => {
+            const selected = e.target.value;
+            if (selected === 'item') {
+                destinationHint.textContent = 'Data akan dikirim ke API Item';
+            } else {
+                destinationHint.textContent = 'Data akan dikirim ke API Pesanan';
+            }
+        });
 
         // Fungsi: Tampilkan nama file saat user memilih file
         fileInput.addEventListener('change', (e) => {
@@ -84,10 +115,15 @@
             }
 
             const file = fileInput.files[0];
+            const destination = destinationSelect.value;
+            const targetUrl = API_ENDPOINTS[destination]; // Pilih URL berdasarkan dropdown
+
             const formData = new FormData();
             
             // Masukkan file ke dalam paket data
             formData.append('data', file); 
+            // Opsional: Kirim juga tipe tujuannya jika backend membutuhkannya
+            formData.append('type', destination); 
 
             // Ubah tombol jadi Loading
             const originalBtnText = submitBtn.innerHTML;
@@ -96,14 +132,15 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>Mengirim...</span>
+                <span>Mengirim ke ${destination === 'item' ? 'Item' : 'Pesanan'}...</span>
             `;
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
             try {
-                // Kirim data ke upload.php
-                const response = await fetch(API_URL, {
+                console.log(`Mengirim ke URL: ${targetUrl}`); // Debugging log
+
+                const response = await fetch(targetUrl, {
                     method: 'POST',
                     body: formData
                 });
@@ -114,12 +151,14 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'Terkirim!',
-                        text: 'File berhasil dikirim ke sistem.',
+                        text: `File berhasil dikirim sebagai ${destination === 'item' ? 'Item' : 'Pesanan'}.`,
                         confirmButtonColor: '#2563EB'
                     });
                     // Reset form setelah sukses
                     uploadForm.reset();
                     fileNameContainer.classList.add('hidden');
+                    // Reset hint text
+                    destinationHint.textContent = 'Data akan dikirim ke API Item';
                 } else {
                     throw new Error(result.message || 'Gagal mengirim data');
                 }
